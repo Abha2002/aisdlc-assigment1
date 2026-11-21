@@ -1,0 +1,9 @@
+{
+  ".harness/lock.py": "4b43e3d62e3f3e0a9513b6dc138ae6f37db189e2d22be5d5820806cacdbd5d4d",
+  ".harness/run_harness.py": "53b81a18bc9357972291f3ef1fbb5040856a62f5340e7163569b9040f69dc5d9",
+  "pyproject.toml": "8eb4b8f52ad319e1de2f32d98268c24f5d20209694ffb29f65f266f4306ff6a2",
+  "requirements-dev.txt": "a022c1a170073163b365434ba2e8eb4627682bb7ac0cb1b5bafa2f3f7149dbe7",
+  "tests/conftest.py": "c69f2b64ab4ab71f7221e23f2cd5b8d8c42ad96d55e87caed4d443141ef8bf9d",
+  "tests/test_cli.py": "0e12b399400ddec63c826e0375910e423f941dede53e03dffef459d54bfafac3",
+  "tests/test_service.py": "493ad7bda41ecb5ff5beda9449beaab6a8a1134c7bf9a22d2a9d3fc1f416d292"
+}
