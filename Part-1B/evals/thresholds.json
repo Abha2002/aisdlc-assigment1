@@ -1,0 +1,10 @@
+{
+  "declared_before_first_evaluation": true,
+  "scoring": "case_score = 0 if structural or invariant check fails, else semantic mean in [0,1]; aggregate = mean(case_score) over all non-service-error samples",
+  "aggregate_score_min": 0.85,
+  "structural_pass_rate_min": 1.0,
+  "invariant_pass_rate_min": 1.0,
+  "guardrail_pass_rate_min": 1.0,
+  "case_semantic_min": 0.7,
+  "rationale": "Invariants (INV-*) are 'must always hold' rules, so any violation fails the run; guardrails likewise. Aggregate 0.85 allows imperfect semantic quality on judgement cases."
+}
