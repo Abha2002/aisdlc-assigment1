@@ -2,7 +2,7 @@
 
 ## 1. Context
 - Spec Kit version / coding agent + model used:
-- Date, repo commit of the locked harness (`git rev-parse HEAD`):
+- Date, repo commit of the locked harness (`git rev-parse 6abe828`):
 - Task/spec context given to the agent before generation (which commands, which artifacts):
 
 ## 2. Initial generation
