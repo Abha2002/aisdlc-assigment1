@@ -56,6 +56,16 @@ A user performs task operations through `python -m todo` with JSON output and cl
 - Read-only operations must not create a missing data file.
 - `tags=[]` updates or clears tags as an explicit field while `tags=None` means tags were not provided.
 
+## Clarifications
+
+### Session 2026-11-22
+
+- **Status transitions**: `done -> in_progress` is NOT allowed. The exact allowed transitions remain those listed in FR-8: `todo -> in_progress`, `todo -> done`, `in_progress -> todo`, `in_progress -> done`, and `done -> todo`.
+- **Concurrent writers**: Concurrency control and concurrent-writer guarantees are out of scope. Multiple processes must not be assumed to coordinate; no operation-level concurrency semantics are specified. If simultaneous writes occur, last-writer-wins is acceptable.
+- **Tag filtering**: Tag filters use exact-match semantics only. Prefix, substring, and partial matching are not supported; a filter matches a tag only when the case-insensitively normalized values are equal.
+- **CLI tag arguments**: `--tag` is repeatable for `add` and `edit`. For example, `--tag work --tag urgent` supplies two tags. Comma-separated tag values are not supported: a comma is subject to the normal tag validation and is not interpreted as a separator.
+- **Title characters**: Titles may contain non-ASCII characters. The title rule is based on Python string length after surrounding whitespace is stripped: it must contain 1 through 100 characters. Tags remain ASCII-only because the required tag pattern is `[a-z0-9-]{1,20}`.
+
 ## Requirements
 
 ### Public Interface
@@ -96,6 +106,8 @@ A task dict MUST contain exactly these keys: `id`, `title`, `priority`, `status`
   - `delete ID`
   - `status ID NEW_STATUS`
   - `list [--tag T] [--status S] [--sort priority|id]`
+
+  In `add` and `edit`, `--tag` MUST be repeatable; each occurrence supplies one tag. Comma-separated values are not a list separator.
 
   On success, the CLI MUST print exactly one JSON document to stdout: a task, a list, or `{"deleted": ID}`, and MUST exit with code 0. On any `TodoError`, it MUST print `error: <message>` to stderr, print nothing to stdout, and exit with code 2.
 
