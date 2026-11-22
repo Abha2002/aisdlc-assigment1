@@ -1,0 +1,39 @@
+{
+  "label": "initial",
+  "timestamp_utc": "2026-11-22T18:15:07.228641+00:00",
+  "python": "3.14.3",
+  "src_tree_sha256": "8c7bcc44a06179c55d57a45fca12dcb07206a293d09c6d5b416c29c614495699",
+  "overall": "FAIL",
+  "gates": [
+    {
+      "id": "G0",
+      "name": "integrity",
+      "status": "PASS",
+      "seconds": 0
+    },
+    {
+      "id": "G1",
+      "name": "lint (ruff)",
+      "status": "FAIL",
+      "seconds": 0.46
+    },
+    {
+      "id": "G2",
+      "name": "sast (bandit)",
+      "status": "PASS",
+      "seconds": 1.47
+    },
+    {
+      "id": "G3",
+      "name": "secrets",
+      "status": "PASS",
+      "seconds": 0
+    },
+    {
+      "id": "G4",
+      "name": "tests+coverage (pytest)",
+      "status": "PASS",
+      "seconds": 7.19
+    }
+  ]
+}
