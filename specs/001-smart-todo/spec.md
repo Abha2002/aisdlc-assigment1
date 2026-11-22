@@ -98,7 +98,7 @@ A task dict MUST contain exactly these keys: `id`, `title`, `priority`, `status`
 - **FR-8**: Valid statuses MUST be exactly `todo`, `in_progress`, and `done`. Allowed transitions MUST be only `todo -> in_progress`, `todo -> done`, `in_progress -> todo`, `in_progress -> done`, and `done -> todo`. Any other change, including setting the same status, MUST raise `InvalidTransitionError` and leave the task unchanged. An unknown status value MUST raise `ValidationError`. Unknown task ids MUST follow FR-5 id rules.
 - **FR-9**: `list_tasks` MUST optionally filter by normalized tag exact match case-insensitively and optionally filter by status. Both filters MUST be combinable. `sort="priority"` MUST order high, medium, low and then id ascending. `sort="id"` MUST order id ascending. Any other sort or status value MUST raise `ValidationError`. No matches MUST produce `[]`.
 - **FR-10**: All state MUST be stored in one JSON file specified by `path` using exactly the shape `{"version":1,"next_id":int,"tasks":[...]}`. Writes MUST use an atomic temp file in the same directory followed by `os.replace`. A failed write MUST raise `StorageError`, leave the previous file byte-identical, and leave no temp files. Read-only operations MUST NOT create the file. State MUST persist across `TaskService` instances.
-- **FR-11**: An empty file, invalid JSON, or JSON of the wrong shape MUST raise `StorageError` on every operation and MUST not modify or overwrite the corrupt file.
+- **FR-11**: An empty file, invalid JSON, or JSON of the wrong shape MUST raise `StorageError` on every operation and MUST not modify or overwrite the corrupt file. This includes a `next_id` that is not an integer, is less than 1, or is not greater than every existing task `id`; a bool MUST NOT be accepted as an integer.
 - **FR-12**: The CLI syntax MUST be exactly `python -m todo [--file PATH] <command>` with default file `tasks.json` and commands:
   - `add TITLE [--priority P] [--tag T ...]`
   - `get ID`
@@ -107,7 +107,7 @@ A task dict MUST contain exactly these keys: `id`, `title`, `priority`, `status`
   - `status ID NEW_STATUS`
   - `list [--tag T] [--status S] [--sort priority|id]`
 
-  In `add` and `edit`, `--tag` MUST be repeatable; each occurrence supplies one tag. Comma-separated values are not a list separator.
+  In `add` and `edit`, `--tag` MUST be repeatable; each occurrence supplies one tag. Comma-separated values are not supported: a comma is subject to the normal tag validation and is not interpreted as a separator.
 
   On success, the CLI MUST print exactly one JSON document to stdout: a task, a list, or `{"deleted": ID}`, and MUST exit with code 0. On any `TodoError`, it MUST print `error: <message>` to stderr, print nothing to stdout, and exit with code 2.
 
@@ -148,3 +148,7 @@ A task dict MUST contain exactly these keys: `id`, `title`, `priority`, `status`
 - A web UI
 - Due dates
 - Authentication
+
+## Invariants
+
+- **Stored next id**: The stored `next_id` MUST be an integer greater than or equal to 1 and greater than every existing task `id`. A JSON store that violates this invariant MUST raise `StorageError` on every operation`.
