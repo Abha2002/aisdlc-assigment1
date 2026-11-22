@@ -1,0 +1,39 @@
+{
+  "label": "repair-1",
+  "timestamp_utc": "2026-11-22T23:17:40.169324+00:00",
+  "python": "3.14.3",
+  "src_tree_sha256": "2f93515d17187ee893d07d515962898040dc957d4b07302d6c876036aded4acb",
+  "overall": "PASS",
+  "gates": [
+    {
+      "id": "G0",
+      "name": "integrity",
+      "status": "PASS",
+      "seconds": 0
+    },
+    {
+      "id": "G1",
+      "name": "lint (ruff)",
+      "status": "PASS",
+      "seconds": 0.88
+    },
+    {
+      "id": "G2",
+      "name": "sast (bandit)",
+      "status": "PASS",
+      "seconds": 1.48
+    },
+    {
+      "id": "G3",
+      "name": "secrets",
+      "status": "PASS",
+      "seconds": 0
+    },
+    {
+      "id": "G4",
+      "name": "tests+coverage (pytest)",
+      "status": "PASS",
+      "seconds": 7.63
+    }
+  ]
+}

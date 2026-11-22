@@ -5,7 +5,7 @@ import json
 import os
 import re
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from todo.errors import (
@@ -89,35 +89,61 @@ def _valid_created_at(value):
         parsed = datetime.fromisoformat(value)
     except ValueError:
         return False
-    return parsed.tzinfo is not None and parsed.utcoffset() == timezone.utc.utcoffset(parsed)
+    return parsed.tzinfo is not None and parsed.utcoffset() == UTC.utcoffset(parsed)
 
 
-def _validate_task(task, seen_ids):
-    if not isinstance(task, dict) or set(task) != _TASK_KEYS:
-        raise StorageError("invalid task in store")
-    task_id = task["id"]
+def _validate_task_id(task_id, seen_ids):
     if not _is_int(task_id) or task_id < 1 or task_id in seen_ids:
         raise StorageError("invalid task id in store")
-    title = task["title"]
+
+
+def _validate_task_title(title):
     if not isinstance(title, str) or title != title.strip():
         raise StorageError("invalid task title in store")
     if not 1 <= len(title) <= 100:
         raise StorageError("invalid task title in store")
-    if task["priority"] not in _PRIORITIES:
+
+
+def _validate_task_priority(priority):
+    if priority not in _PRIORITIES:
         raise StorageError("invalid task priority in store")
-    if task["status"] not in _STATUSES:
+
+
+def _validate_task_status(status):
+    if status not in _STATUSES:
         raise StorageError("invalid task status in store")
-    if not isinstance(task["tags"], list):
+
+
+def _validate_task_shape(task):
+    if not isinstance(task, dict) or set(task) != _TASK_KEYS:
+        raise StorageError("invalid task in store")
+
+
+def _validate_task_tags(tags):
+    if not isinstance(tags, list):
         raise StorageError("invalid task tags in store")
     try:
-        normalized = normalize_tags(task["tags"])
+        normalized = normalize_tags(tags)
     except ValidationError as exc:
         raise StorageError("invalid task tags in store") from exc
-    if normalized != task["tags"]:
+    if normalized != tags:
         raise StorageError("invalid task tags in store")
-    if not _valid_created_at(task["created_at"]):
+
+
+def _validate_task_created_at(created_at):
+    if not _valid_created_at(created_at):
         raise StorageError("invalid task timestamp in store")
-    seen_ids.add(task_id)
+
+
+def _validate_task(task, seen_ids):
+    _validate_task_shape(task)
+    _validate_task_id(task["id"], seen_ids)
+    _validate_task_title(task["title"])
+    _validate_task_priority(task["priority"])
+    _validate_task_status(task["status"])
+    _validate_task_tags(task["tags"])
+    _validate_task_created_at(task["created_at"])
+    seen_ids.add(task["id"])
 
 
 def validate_store(store):
@@ -206,7 +232,7 @@ class TaskService:
             "priority": clean_priority,
             "status": "todo",
             "tags": clean_tags,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         new_store = copy.deepcopy(store)
         new_store["tasks"].append(task)
