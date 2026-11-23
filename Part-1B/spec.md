@@ -8,6 +8,15 @@
 
 **Input**: Build a natural-language Reminder Agent that interprets reminder requests and returns one structured intent object.
 
+## Clarifications
+
+### Session 2026-11-23
+
+- **Past time today**: A same-day clock time that has already elapsed (for example, "9am today" after 10:00) MUST be scheduled at the next occurrence rather than in the past. For a non-recurring request, the next occurrence is the following day at that time.
+- **Evening window**: When "evening" is used without an exact time, the system MUST resolve it within 17:00-21:00 and SHOULD choose 18:00 as a deterministic default.
+- **Coming weekdays**: When today is Saturday and the request says "this coming Monday", "coming Monday" MUST mean the next Monday.
+- **Clarification language**: Clarification questions SHOULD use the language of the request, including Hindi when the request is in Hindi.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Create and Recurrence Reminders (Priority: P1)
@@ -79,6 +88,10 @@ The system refuses actions outside create, reschedule, and snooze, and does not 
 - Relative time phrases must be resolved against the supplied `now`, not the system clock.
 - Explicit named zones, such as "New York time", must override the user's default timezone for the resolved datetime.
 - Ambiguous calendar expressions must result in clarification, not a guessed date or target.
+- A same-day clock time that is already elapsed MUST be scheduled at the next occurrence, never at a past datetime.
+- The unqualified term "evening" MUST resolve to a deterministic time within 17:00-21:00.
+- On Saturday, "this coming Monday" means the next Monday.
+- Clarification questions for Hindi requests SHOULD be written in Hindi.
 - Absolute dates must include a valid UTC offset and use the offset applicable to the resolved IANA timezone at that instant.
 - A valid create or reschedule datetime must be strictly later than `now` and no more than 1826 days later.
 - Recurrence applies only to create intents; snooze and reschedule outputs must have recurrence `none`.
@@ -114,11 +127,11 @@ The system refuses actions outside create, reschedule, and snooze, and does not 
 
 ### Behavioral Requirements
 
-- **BP-1**: Relative and absolute time expressions, including tomorrow, durations, month/day dates, and coming weekdays, MUST resolve against `now` and the supplied timezone.
+- **BP-1**: Relative and absolute time expressions, including tomorrow, durations, month/day dates, and coming weekdays, MUST resolve against `now` and the supplied timezone. An elapsed same-day clock time MUST resolve to the next occurrence; "evening" without an exact time MUST resolve within 17:00-21:00, with 18:00 as the deterministic default; on Saturday, "this coming Monday" MUST mean the next Monday.
 - **BP-2**: An explicitly named timezone MUST be honored instead of silently substituting the supplied default timezone.
 - **BP-3**: Missing, ambiguous, past, or over-horizon task/time/target information MUST produce a clarify result rather than a guess.
 - **BP-4**: Every-day, every-week, and every-month recurrence words MUST map to `daily`, `weekly`, and `monthly` respectively.
-- **BP-5**: Requests in English and Hindi MUST be interpreted for the same supported intents and time concepts.
+- **BP-5**: Requests in English and Hindi MUST be interpreted for the same supported intents and time concepts. Clarification questions SHOULD use the language of the request, including Hindi for Hindi requests.
 - **BP-6**: Reschedule and snooze targets MUST be resolved only from the supplied existing reminders; multiple matches or no match MUST produce clarification.
 
 ### Safety and Guardrails
