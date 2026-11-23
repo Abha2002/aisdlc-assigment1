@@ -1,0 +1,15 @@
+{
+  ".harness/lock.py": "d0de7a90ca2749d20eb38225b97f4a4b2ff64d4393c7d1bf75d19aef969d7825",
+  ".harness/property_eval.py": "bc11524d9018116c67f4420ee3aadcfd6a4d15efeebb625dea6881cb0509cb08",
+  ".harness/quality_eval.py": "b90a6f489300f4c45b3baa0a76d21b8862844dc747ede9876831e3d9ce76ec6f",
+  ".harness/run_eval.py": "abb58ea67157d0b722aef66a5921cf7166163872839adb9ea2f5e4207c0309ab",
+  ".harness/schema_eval.py": "d1449c7d19e24857001833ccac028cc161ab4d02552d6d91479cc248e709afd8",
+  "evals/dataset.json": "ac974a62fe8e28d0f9511dc81c6c4617479a686a7328f8a0fccdf8cf853d1e7d",
+  "evals/requirements.json": "55ecccc6f78ecac61e1645836205f50d467481017bfd63fdb6433815e8bd96ee",
+  "evals/thresholds.json": "22ff56e15544719b4c4c7f172c3332e87fb18a6208b43324d904e07da0414d82",
+  "pyproject.toml": "4b59cf979f9809467abc1e2c1381557ceafbce716a352aadb905ecf2e5025219",
+  "requirements-dev.txt": "8122e1b48996097985bdf8bd771108dee7492806adfd67046d1f4ddbdbca90fa",
+  "requirements.txt": "d266fb741e02cafa90c04397ba74bf7f6002b498c985bf6703a173efaab540cc",
+  "tests/test_agent_offline.py": "5dd57c203cf9cd51d40f0b223bfd5db6664c6c77cc3b12ee70e7bd8b28a0f3eb",
+  "tests/test_evaluators.py": "37b0e18ed3795983658e1419b595d3053fdf7272ba074b0c3265b2dc807d1717"
+}
