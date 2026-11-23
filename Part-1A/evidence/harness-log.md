@@ -19,9 +19,9 @@ In the initial run, gate G1 failed and gates G0, G2, G3 and G4 passed.
 Ruff reported 4 findings: unsorted imports, datetime.UTC used twice, and _validate_task complexity 11 over the limit of 10.
 The failing rule came from requirement NFR-2 in the constitution.
 I gave the agent the file evidence/harness-results/initial/feedback.md.
-The agent changed (imports, datetime.UTC, the split of _validate_task)in src/todo/ and  did not add noqa.
+The agent changed (imports, datetime.UTC, the split of _validate_task) in src/todo/ and  did not add noqa.
 I re-ran the same harness as repair-1 and the result was PASS on all five gates.
-The root cause was fixed  because the agent split _validate_task into smaller validation functions _validate_task_id, _validate_task_title, _validate_task_priority and used datetime.UTC instead of hiding the warning with noqa, and the same check  repair-1 check then passed all five gates (G0-G4).
+The root cause was fixed  because the agent split  _validate_task into smaller validation functions  _validate_task_id, _validate_task_title , _validate_task_priority and used datetime.UTC instead of hiding the warning with noqa, and the same check then passed all five gates (G0-G4).
 
 ## 5. Specification changes (if any)
 During /speckit.clarify I changed spec.md so that next_id must be a whole number of at least 1 and bigger than every existing task id (commit a3f6a37).
@@ -29,4 +29,4 @@ During /speckit.clarify I changed spec.md so that next_id must be a whole number
 ## 6. Final human review
 - Decision: ACCEPT 
 - Justification (what you reviewed yourself in the code, beyond the harness): I checked src/todo/service.py and found that its imports are limited to built-in modules (json, os, re, tempfile, datetime, and pathlib); I also ran Select-String -Path src\todo\*.py -Pattern "noqa|nosec" and it produced no matches.
-- Known limitations / residual risks:Two processes writing to the same file at the same time could overwrite each other's changes, which the specification allows.
+- Known limitations / residual risks: Two processes writing to the same file at the same time could overwrite each other's changes, which the specification allows.
