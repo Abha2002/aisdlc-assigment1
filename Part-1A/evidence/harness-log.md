@@ -28,5 +28,5 @@ During /speckit.clarify I changed spec.md so that next_id must be a whole number
 
 ## 6. Final human review
 - Decision: ACCEPT 
-- Justification (what you reviewed yourself in the code, beyond the harness): I checked src/todo/service.py and found that its imports are limited to built-in modules (json, os, re, tempfile, datetime, and pathlib); I also ran Select-String -Path src\todo\*.py -Pattern "noqa|nosec" and it produced no matches.
+- Justification : I checked src/todo/service.py and found that its imports are limited to built-in modules (json, os, re, tempfile, datetime, and pathlib); I also ran Select-String -Path src\todo\*.py -Pattern "noqa|nosec" and it produced no matches.
 - Known limitations / residual risks: Two processes writing to the same file at the same time could overwrite each other's changes, which the specification allows.
