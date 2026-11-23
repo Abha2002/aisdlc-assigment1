@@ -5,21 +5,27 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-try:
-    import anthropic
-except ImportError:  # pragma: no cover - dependency is declared at runtime
-    anthropic = None
-
 from .errors import ModelServiceError
 from .prompts import SYSTEM_PROMPT
 
-MODEL_NAME = os.getenv("REMINDER_MODEL", "claude-sonnet-4-20250514")
+
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
+try:
+    REQUEST_INTERVAL_SECONDS = max(
+        0.0,
+        float(os.getenv("GEMINI_REQUEST_INTERVAL_SECONDS", "5")),
+    )
+except ValueError:
+    REQUEST_INTERVAL_SECONDS = 5.0
 TEMPERATURE = None
-_temperature_value = os.getenv("REMINDER_TEMPERATURE")
+_temperature_value = os.getenv("GEMINI_TEMPERATURE")
 if _temperature_value is not None:
     try:
         TEMPERATURE = float(_temperature_value)
@@ -133,15 +139,14 @@ def _unsupported(text: str) -> bool:
     low = text.lower()
     patterns = (
         r"\bdelete\b",
-        r"\bemail\b",
-        r"\bsend\b",
-        r"\bmessage\b",
-        r"\btext\b",
+        r"\bemail\b.{0,40}\b(?:list|reminder|message)\b",
+        r"\b(?:send|forward|share)\b.{0,40}\b(?:email|message|text)\b",
+        r"\bsend[_ -]?email\b",
+        r"\bdelete[_ -]?all\b",
+        r"\b(?:send|post|publish)\b.{0,30}\b(?:boss|colleague|recipient)\b",
         r"\btool\b",
         r"\bexecute\b",
         r"\brun\s+(?:a\s+)?code\b",
-        r"send[_ -]?email",
-        r"delete[_ -]?all",
     )
     return any(re.search(pattern, low) for pattern in patterns)
 
@@ -605,15 +610,26 @@ def _extract_json(content: str) -> dict[str, Any]:
 
 def _service_error(exc: Exception) -> ModelServiceError:
     message = str(exc).lower()
+    status = getattr(exc, "code", None)
+    if status == 429:
+        return ModelServiceError("Model service rate limit was reached.")
+    if status == 401:
+        return ModelServiceError("The Gemini API key is invalid or missing.")
+    if status == 403:
+        return ModelServiceError("Gemini access restriction or rate limit was reached.")
+    if status in (400, 403, 404, 500, 502, 503):
+        return ModelServiceError(f"Gemini API HTTP {status}.")
     if "timeout" in message or "timed out" in message:
         return ModelServiceError("Model request timed out.")
     if "rate" in message and "limit" in message:
         return ModelServiceError("Model service rate limit was reached.")
-    if "authentication" in message or "api key" in message:
-        return ModelServiceError("The Anthropic API key is invalid or missing.")
+    if "401" in message or "unauthorized" in message:
+        return ModelServiceError("The Gemini API key is invalid or missing.")
+    if "api key" in message:
+        return ModelServiceError("The Gemini API key is invalid or missing.")
     if any(word in message for word in ("network", "connection", "server", "api", "status")):
         return ModelServiceError("Model service API, server, or network failure.")
-    return ModelServiceError("Anthropic SDK failure.")
+    return ModelServiceError("Gemini service or network failure.")
 
 
 def _call_model(
@@ -622,11 +638,9 @@ def _call_model(
     tz: str,
     existing_reminders: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    if anthropic is None:
-        raise ModelServiceError("Anthropic SDK is unavailable.")
-    key = os.getenv("ANTHROPIC_API_KEY")
+    key = os.getenv("GEMINI_API_KEY")
     if not key:
-        raise ModelServiceError("ANTHROPIC_API_KEY is not set.")
+        raise ModelServiceError("GEMINI_API_KEY is not set.")
 
     context = json.dumps(
         {
@@ -642,35 +656,63 @@ def _call_model(
         "clarify",
         clarification_question="Please clarify the reminder task, time, or target.",
     )
-    try:
-        client = anthropic.Anthropic(api_key=key)
-    except Exception as exc:
-        raise _service_error(exc) from exc
-
     temperature = TEMPERATURE
     for attempt in range(2):
-        kwargs: dict[str, Any] = {
-            "model": MODEL_NAME,
-            "max_tokens": 500,
-            "system": SYSTEM_PROMPT,
-            "messages": [{"role": "user", "content": context}],
+        payload: dict[str, Any] = {
+            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "contents": [{"role": "user", "parts": [{"text": context}]}],
+            "generationConfig": {"maxOutputTokens": 500},
         }
         if temperature is not None:
-            kwargs["temperature"] = temperature
+            payload["generationConfig"]["temperature"] = temperature
         try:
-            response = client.messages.create(**kwargs)
-        except Exception as exc:
-            message = str(exc).lower()
+            if REQUEST_INTERVAL_SECONDS:
+                time.sleep(REQUEST_INTERVAL_SECONDS)
+            request = urllib.request.Request(
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{MODEL_NAME}:generateContent",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "x-goog-api-key": key,
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=30) as response:
+                response_payload = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            message = f"{exc.code} {exc.reason}".lower()
             if "temperature" in message and "unsupported" in message and attempt == 0:
                 temperature = None
                 globals()["TEMPERATURE"] = None
                 continue
+            if exc.code in (429, 503) and attempt == 0:
+                continue
+            try:
+                response_detail = exc.read(500).decode("utf-8", errors="replace")
+                detail_object = json.loads(response_detail)
+                detail = detail_object.get("error", response_detail)
+                if isinstance(detail, dict):
+                    detail = detail.get("message", detail)
+                if isinstance(detail, str) and detail:
+                    raise ModelServiceError(f"Gemini API HTTP {exc.code}: {detail[:300]}") from exc
+            except json.JSONDecodeError:
+                pass
+            raise _service_error(exc) from exc
+        except urllib.error.URLError as exc:
+            raise _service_error(exc) from exc
+        except TimeoutError as exc:
             raise _service_error(exc) from exc
 
-        content = ""
-        for block in getattr(response, "content", []):
-            if getattr(block, "type", None) == "text":
-                content += getattr(block, "text", "")
+        candidates = response_payload.get("candidates")
+        if not isinstance(candidates, list) or not candidates:
+            raise ModelServiceError("Gemini service returned no model output.")
+        content_parts = candidates[0].get("content", {}).get("parts", [])
+        content = "".join(
+            part.get("text", "")
+            for part in content_parts
+            if isinstance(part, dict)
+        )
         try:
             output = _extract_json(content)
             if not _valid_output_shape(output):
@@ -720,8 +762,8 @@ def handle(
             clarification_question="Please provide valid existing reminder records.",
         )
 
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise ModelServiceError("ANTHROPIC_API_KEY is not set.")
+    if not os.getenv("GEMINI_API_KEY"):
+        raise ModelServiceError("GEMINI_API_KEY is not set.")
 
     # BP-3/INV-3: malformed text, unsupported actions, targets, and missing input
     # are resolved locally so the application never guesses or executes an action.
